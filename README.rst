@@ -7,9 +7,10 @@ A small collection of template tags for debugging and introspecting templates
 Installation
 ************
 
-Packaging on pypi isn't complete yet. For now you'll need to clone the repo
-into your virtualenv's site-packages, or pip install the egg from github directly.
+django-template-debug is available on pypi, so the easiest way to install it 
+is using pip::
 
+    pip install django-template-debug
 
 Setup
 *****
