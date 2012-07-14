@@ -26,13 +26,17 @@ def _flatten(iterable):
             yield i
 
 
-@register.simple_tag(takes_context=True)
-def variables(context):
+def _get_variables(context):
     if not TEMPLATE_DEBUG:
         return []
     availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
     availables.remove('block')
-    availables = sorted(list(availables))
+    return sorted(list(availables))
+
+
+@register.simple_tag(takes_context=True)
+def variables(context):
+    availables = _get_variables(context)
     pprint(availables)
     return availables
 
@@ -44,13 +48,14 @@ def set_trace(context):
     'context'. Uses ipdb if available.
     """
     if TEMPLATE_DEBUG:
-        print("For best results, pip install ipdb")
+        print("For best results, pip install ipdb.")
         print("Variables that are available in the current context:")
-        availables = variables(context)
-        print('Use `availables` to show this list. Use ' \
-              '`context.variable_name to access variables in the context')
+        availables = _get_variables(context)
+        pprint(availables)
+        print('Type `availables` to show this list.')
+        print('Type <variable_name> to access one.')
         for var in availables:
-            setattr(context, var, context[var])
+            locals()[var] = context[var]
         pdb.set_trace()
 
 
