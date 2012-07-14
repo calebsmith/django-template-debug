@@ -1,3 +1,5 @@
 *.py[co~]
 *.orig
 ~.*
+dist/
+*.egg-info/
