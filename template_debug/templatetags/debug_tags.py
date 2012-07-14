@@ -30,7 +30,10 @@ def _get_variables(context):
     if not TEMPLATE_DEBUG:
         return []
     availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
-    availables.remove('block')
+    try:
+        availables.remove('block')
+    except KeyError:
+        pass
     return sorted(list(availables))
 
 
