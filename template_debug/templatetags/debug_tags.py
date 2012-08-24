@@ -84,5 +84,5 @@ def details(var):
             except:
                 pass
             else:
-                var_data[attr] = value
+                var_data[attr] = 'method' if callable(value) else value
         pprint(var_data)
