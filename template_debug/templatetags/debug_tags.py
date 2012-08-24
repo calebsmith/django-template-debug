@@ -14,7 +14,7 @@ from django import template
 
 
 register = template.Library()
-TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
+DEBUG = getattr(settings, 'DEBUG', False)
 
 
 def _flatten(iterable):
@@ -27,7 +27,7 @@ def _flatten(iterable):
 
 
 def _get_variables(context):
-    if not TEMPLATE_DEBUG:
+    if not DEBUG:
         return []
     availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
     try:
@@ -40,7 +40,8 @@ def _get_variables(context):
 @register.simple_tag(takes_context=True)
 def variables(context):
     availables = _get_variables(context)
-    pprint(availables)
+    if DEBUG:
+        pprint(availables)
     return availables
 
 
@@ -50,7 +51,7 @@ def set_trace(context):
     Start a pdb set_trace inside of the template with the context available as
     'context'. Uses ipdb if available.
     """
-    if TEMPLATE_DEBUG:
+    if DEBUG:
         print("For best results, pip install ipdb.")
         print("Variables that are available in the current context:")
         availables = _get_variables(context)
@@ -65,10 +66,10 @@ def set_trace(context):
 @register.simple_tag
 def details(var):
     """
-    Prints a dictionary showing the attributes of a variable, and if possible, 
+    Prints a dictionary showing the attributes of a variable, and if possible,
     their corresponding values.
     """
-    if TEMPLATE_DEBUG:
+    if DEBUG:
         module = getattr(var, '__module__', '')
         kls = getattr(getattr(var, '__class__', ''), '__name__', '')
         if module:

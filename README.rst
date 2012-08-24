@@ -25,11 +25,8 @@ add 'template_debug' to your installed apps via::
 N.B. - You will need to change your INSTALLED_APPS setting to a list in your base settings.py if it is a tuple
 or do something like: INSTALLED_APPS = list(INSTALLED_APPS) + 'template_debug'
 
-Add the following to your local_settings.py::
-
-    TEMPLATE_DEBUG = True
-
-Without this setting, the debug templates will return without doing anything.
+Add DEBUG = TRUE to your local settings if it is not already set.
+Unless DEBUG is set to TRUE, the debug templates will return without doing anything.
 This behavior prevents your application from calling set_trace() or print in a production environment
 if django-template-debug is accidentally installed outside of the local settings.
 
