@@ -68,6 +68,7 @@ def _get_detail_value(var, attr):
     a callable that is flagged with alters_data. Callables and Django ORM
     objects return as strings.
     """
+    # Remove private methods
     if attr.startswith('_'):
         return None
     try:
@@ -76,11 +77,16 @@ def _get_detail_value(var, attr):
         return None
     else:
         if callable(value):
-            # Only report values that don't alter data
+            # Remove methods that alter data
             if getattr(value, 'alters_data', False):
                 return None
             else:
+                # Remove methods that require arguments
+                if hasattr(value, 'im_func'):
+                    if len(value.im_func.func_code.co_varnames) > 1:
+                        return None
                 return 'method'
+        # Rename common Django class names
         kls = getattr(getattr(value, '__class__', ''), '__name__', '')
         if kls in ('ManyRelatedManager', 'RelatedManager'):
             value = kls
