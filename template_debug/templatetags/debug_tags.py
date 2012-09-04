@@ -79,7 +79,11 @@ def _get_detail_value(var, attr):
             # Only report values that don't alter data
             if getattr(value, 'alters_data', False):
                 return None
-            value = 'method'
+            else:
+                return 'method'
+        kls = getattr(getattr(value, '__class__', ''), '__name__', '')
+        if kls in ('ManyRelatedManager', 'RelatedManager'):
+            value = kls
         return value
 
 
