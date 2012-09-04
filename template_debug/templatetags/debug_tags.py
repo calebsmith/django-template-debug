@@ -81,7 +81,7 @@ def details(var):
         for attr in attrs:
             try:
                 value = getattr(var, attr)
-            except:
+            except AttributeError:
                 pass
             else:
                 var_data[attr] = 'method' if callable(value) else value
