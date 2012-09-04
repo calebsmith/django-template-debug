@@ -18,6 +18,7 @@ TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
 
 
 def _flatten(iterable):
+    """Given an iterable with nested iterables, generate a flat iterable"""
     for i in iterable:
         if isinstance(i, Iterable) and not isinstance(i, basestring):
             for sub_i in _flatten(i):
@@ -27,6 +28,9 @@ def _flatten(iterable):
 
 
 def _get_variables(context):
+    """
+    Given a context, return a sorted list of varaible names in the context
+    """
     if not TEMPLATE_DEBUG:
         return []
     availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
@@ -37,12 +41,73 @@ def _get_variables(context):
     return sorted(list(availables))
 
 
+def _get_detail_data(var):
+    """
+    Given a variable inside the context, obtain the attributes/callables,
+    their values where possible, and the module name and class name if possible
+    """
+    var_data = {}
+    # Obtain module and class details if available and add them in
+    module = getattr(var, '__module__', '')
+    kls = getattr(getattr(var, '__class__', ''), '__name__', '')
+    if module:
+        var_data['META_module name'] = module
+    if kls:
+        var_data['META_class name'] = kls
+    for attr in dir(var):
+        value = _get_detail_value(var, attr)
+        if value is not None:
+            var_data[attr] = value
+    return var_data
+
+
+def _get_detail_value(var, attr):
+    """
+    Given a variable and one of its attributes, return its value. Return None
+    if var.attribute raises an exception, is private (starts with _), or is
+    a callable that is flagged with alters_data. Callables and Django ORM
+    objects return as strings.
+    """
+    if attr.startswith('_'):
+        return None
+    try:
+        value = getattr(var, attr)
+    except:
+        return None
+    else:
+        if callable(value):
+            # Only report values that don't alter data
+            if getattr(value, 'alters_data', False):
+                return None
+            value = 'method'
+        return value
+
+
+def _display_details(var_data):
+    meta_keys = (key for key in list(var_data.keys())
+                 if key.startswith('META_'))
+    for key in meta_keys:
+        display_key = key[5:].capitalize()
+        pprint('{0}: {1}'.format(display_key, var_data.pop(key)))
+    pprint(var_data)
+
+
 @register.simple_tag(takes_context=True)
 def variables(context):
     availables = _get_variables(context)
     if TEMPLATE_DEBUG:
         pprint(availables)
     return availables
+
+
+@register.simple_tag
+def details(var):
+    """
+    Prints a dictionary showing the attributes of a variable, and if possible,
+    their corresponding values.
+    """
+    if TEMPLATE_DEBUG:
+        _display_details(_get_detail_data(var))
 
 
 @register.simple_tag(takes_context=True)
@@ -61,28 +126,3 @@ def set_trace(context):
         for var in availables:
             locals()[var] = context[var]
         pdb.set_trace()
-
-
-@register.simple_tag
-def details(var):
-    """
-    Prints a dictionary showing the attributes of a variable, and if possible,
-    their corresponding values.
-    """
-    if TEMPLATE_DEBUG:
-        module = getattr(var, '__module__', '')
-        kls = getattr(getattr(var, '__class__', ''), '__name__', '')
-        if module:
-            print('Module: {0}'.format(module))
-        if kls:
-            print('Class: {0}'.format(kls))
-        attrs = (attr for attr in dir(var) if not attr.startswith('_'))
-        var_data = {}
-        for attr in attrs:
-            try:
-                value = getattr(var, attr)
-            except:
-                pass
-            else:
-                var_data[attr] = 'method' if callable(value) else value
-        pprint(var_data)
