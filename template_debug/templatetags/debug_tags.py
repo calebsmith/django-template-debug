@@ -83,7 +83,7 @@ def _get_detail_value(var, attr):
             else:
                 # Remove methods that require arguments
                 if hasattr(value, 'im_func'):
-                    if len(value.im_func.func_code.co_varnames) > 1:
+                    if value.im_func.func_code.co_argcount > 1:
                         return None
                 return 'method'
         # Rename common Django class names
