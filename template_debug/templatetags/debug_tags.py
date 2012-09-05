@@ -124,19 +124,20 @@ def details(var):
 @register.simple_tag
 def find(var):
     """
-    Given a callable, return a dict with the filename (minus PROJECT_ROOT if
-    possible), and the line number. If the object is not callable returns the
-    string "Not a callable"
+    Given a callable, return a string with the filename (minus PROJECT_ROOT if
+    present), a colon separator and the line number. If the object is not
+    callable returns the string "Not a callable"
     """
-    if callable(var):
-        func_code = var.im_func.func_code
-        filename = func_code.co_filename
-        filename = filename.lstrip(PROJECT_ROOT)
-        return {
-            'filename': unicode(filename),
-            'line_no': func_code.co_firstlineno,
-        }
-    return 'Not a callable'
+    if TEMPLATE_DEBUG:
+        if callable(var):
+            func_code = var.im_func.func_code
+            filename = func_code.co_filename
+            filename = filename.lstrip(PROJECT_ROOT)
+            lineno = unicode(func_code.co_firstlineno)
+            result = u':'.join((filename, lineno))
+        else:
+            result = u'Not a callable'
+        return result
 
 
 @register.simple_tag(takes_context=True)
