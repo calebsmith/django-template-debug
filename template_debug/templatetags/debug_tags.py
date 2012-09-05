@@ -15,6 +15,7 @@ from django import template
 
 register = template.Library()
 TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
+PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT')
 
 
 def _flatten(iterable):
@@ -118,6 +119,25 @@ def details(var):
     """
     if TEMPLATE_DEBUG:
         _display_details(_get_detail_data(var))
+
+
+@register.simple_tag
+def find(var):
+    """
+    Given a callable, return the filename (minus PROJECT_ROOT if possible) and
+    the file number. If the object is not callable returns the string "Not a
+    callable"
+    """
+    if callable(var):
+        func_code = var.im_func.func_code
+        filename = func_code.co_filename
+        filename = filename.(PROJECT_ROOT)
+        return {
+            'name': func_code.co_name,
+            'filename': filename,
+            'line_no': unicode(func_code.co_firstlineno),
+        }
+    return 'Not a callable'
 
 
 @register.simple_tag(takes_context=True)
