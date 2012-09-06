@@ -15,7 +15,7 @@ from django import template
 
 register = template.Library()
 TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
-PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT')
+PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
 
 
 def _flatten(iterable):
@@ -95,6 +95,10 @@ def _get_detail_value(var, attr):
 
 
 def _display_details(var_data):
+    """
+    Given a dictionary of variable attribute data from _get_detail_data
+    display the data in the terminal.
+    """
     meta_keys = (key for key in list(var_data.keys())
                  if key.startswith('META_'))
     for key in meta_keys:
@@ -103,8 +107,63 @@ def _display_details(var_data):
     pprint(var_data)
 
 
+def _find_func_details(var):
+    im_func = _find_func_im_func(var)
+    try:
+        original_name = im_func.func_name
+    except AttributeError:
+        return None
+    func_closures = _flatten(_find_func_or_closures(var))
+    for func in filter(lambda x: x, func_closures):
+        funcname = func.split(':')[0]
+        if funcname == original_name:
+            return func
+
+
+def _find_func_im_func(var):
+    """
+    Given a variable, return im_func if available, otherwise return the
+    variable
+    """
+    return getattr(var, 'im_func', var)
+
+
+def _find_func_or_closures(var):
+    """
+    Given a callable, return a list of strings that are : delimited and
+    represent function meta data in the format: "name:filename:line_number".
+    If the argument is not callable return [None]. A callable with closures
+    returns a list of meta data strings such as:
+        [name:filename:line_number, ...]
+    """
+    if callable(var):
+        im_func = _find_func_im_func(var)
+        if not im_func.func_closure:
+            func_code = im_func.func_code
+            filename = func_code.co_filename
+            funcname = im_func.func_name
+            filename = filename.lstrip(PROJECT_ROOT)
+            lineno = unicode(func_code.co_firstlineno)
+            return [':'.join((funcname, filename, lineno))]
+        else:
+            results = []
+            for closure in im_func.func_closure:
+                contents = closure.cell_contents
+                if isinstance(contents, Iterable):
+                    for content in contents:
+                        results.append(_find_func_or_closures(content))
+                else:
+                    results.append(_find_func_or_closures(contents))
+            return results
+    else:
+        return [None]
+
+
 @register.simple_tag(takes_context=True)
 def variables(context):
+    """
+    Given a context, return a flat list of variables available in the context.
+    """
     availables = _get_variables(context)
     if TEMPLATE_DEBUG:
         pprint(availables)
@@ -129,15 +188,8 @@ def find(var):
     callable returns the string "Not a callable"
     """
     if TEMPLATE_DEBUG:
-        if callable(var):
-            func_code = var.im_func.func_code
-            filename = func_code.co_filename
-            filename = filename.lstrip(PROJECT_ROOT)
-            lineno = unicode(func_code.co_firstlineno)
-            result = u':'.join((filename, lineno))
-        else:
-            result = u'Not a callable'
-        return result
+        func_details = _find_func_details(var)
+        return func_details if func_details else "Not a callable"
 
 
 @register.simple_tag(takes_context=True)
