@@ -9,4 +9,5 @@ class TemplateDebugTestCase(TestCase):
     "Base test case with helpers for template debug tests."
 
     def get_random_string(self, length=10):
-        return ''.join(random.choice(string.ascii_letters) for x in range(length))
+        return ''.join(random.choice(string.ascii_letters)
+                       for x in xrange(length))
