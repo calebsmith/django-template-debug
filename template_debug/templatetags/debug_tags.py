@@ -118,6 +118,8 @@ def _find_func_details(var):
         funcname = func.split(':')[0]
         if funcname == original_name:
             return func
+    # If original name couldn't be found, return a best guess
+    return func
 
 
 def _find_func_im_func(var):
