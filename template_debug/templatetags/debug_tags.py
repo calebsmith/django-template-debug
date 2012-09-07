@@ -18,6 +18,13 @@ TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
 PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
 
 
+def require_template_debug(f):
+    """Decorated function is a no-op if TEMPLATE_DEBUG is False"""
+    def _(*args, **kwargs):
+        return f(*args, **kwargs) if TEMPLATE_DEBUG else None
+    return _
+
+
 def _flatten(iterable):
     """Given an iterable with nested iterables, generate a flat iterable"""
     for i in iterable:
@@ -30,11 +37,10 @@ def _flatten(iterable):
 
 def _get_variables(context):
     """
-    Given a context, return a sorted list of varaible names in the context
+    Given a context, return a sorted list of variable names in the context
     """
-    if not TEMPLATE_DEBUG:
-        return []
     availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
+    # Don't show the rendering tree 'block' as a variable in the context
     try:
         availables.remove('block')
     except KeyError:
@@ -67,7 +73,7 @@ def _get_detail_value(var, attr):
     Given a variable and one of its attributes, return its value. Return None
     if var.attribute raises an exception, is private (starts with _), or is
     a callable that is flagged with alters_data. Callables and Django ORM
-    objects return as strings.
+    managers return as strings indicating 'method' or another friendly name.
     """
     # Remove private methods
     if attr.startswith('_'):
@@ -161,52 +167,52 @@ def _find_func_or_closures(var):
         return [None]
 
 
+@require_template_debug
 @register.simple_tag(takes_context=True)
 def variables(context):
     """
     Given a context, return a flat list of variables available in the context.
     """
     availables = _get_variables(context)
-    if TEMPLATE_DEBUG:
-        pprint(availables)
+    pprint(availables)
     return availables
 
 
+@require_template_debug
 @register.simple_tag
 def details(var):
     """
     Prints a dictionary showing the attributes of a variable, and if possible,
     their corresponding values.
     """
-    if TEMPLATE_DEBUG:
-        _display_details(_get_detail_data(var))
+    _display_details(_get_detail_data(var))
 
 
+@require_template_debug
 @register.simple_tag
 def find(var):
     """
-    Given a callable, return a string with the filename (minus PROJECT_ROOT if
-    present), a colon separator and the line number. If the object is not
-    callable returns the string "Not a callable"
+    Given a callable, return a string with the function's name, filename
+    (minus PROJECT_ROOT if present), and the line number. If the object is not
+    callable, return the string "Not a callable"
     """
-    if TEMPLATE_DEBUG:
-        func_details = _find_func_details(var)
-        return func_details if func_details else "Not a callable"
+    func_details = _find_func_details(var)
+    return func_details if func_details else "Not a callable"
 
 
+@require_template_debug
 @register.simple_tag(takes_context=True)
 def set_trace(context):
     """
     Start a pdb set_trace inside of the template with the context available as
     'context'. Uses ipdb if available.
     """
-    if TEMPLATE_DEBUG:
-        print("For best results, pip install ipdb.")
-        print("Variables that are available in the current context:")
-        availables = _get_variables(context)
-        pprint(availables)
-        print('Type `availables` to show this list.')
-        print('Type <variable_name> to access one.')
-        for var in availables:
-            locals()[var] = context[var]
-        pdb.set_trace()
+    print("For best results, pip install ipdb.")
+    print("Variables that are available in the current context:")
+    availables = _get_variables(context)
+    pprint(availables)
+    print('Type `availables` to show this list.')
+    print('Type <variable_name> to access one.')
+    for var in availables:
+        locals()[var] = context[var]
+    pdb.set_trace()
