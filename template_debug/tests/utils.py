@@ -1,7 +1,7 @@
 from copy import copy
 
 from template_debug.tests.base import TemplateDebugTestCase
-from template_debug.utils import _flatten, get_variables
+from template_debug.utils import _flatten, get_variables, get_details
 
 
 class FlattenTestCase(TemplateDebugTestCase):
@@ -66,3 +66,80 @@ class GetVariablesTestCase(TemplateDebugTestCase):
         expected_context.insert(5, 'a')
         expected_context.remove('params')
         self.assertEqual(get_variables(context), expected_context)
+
+
+class GetDetailsTestCase(TemplateDebugTestCase):
+
+    def setUp(self):
+        self.user = self.create_user(username='test', password='test')
+        self.client.login(username='test', password='test')
+
+    def test_private_hidden(self):
+        """Assure private methods aren't shown"""
+        user_details = get_details(self.get_context()['user'])
+        self.assertTrue(all([not key.startswith('_')
+                             for key in user_details.keys()]))
+
+    def test_alters_data_hidden(self):
+        """Assure methods that alter data are hidden"""
+        user_details = get_details(self.get_context()['user'])
+
+        def alters_data(key):
+            "Given key, returns true if user.key.alters_data = True"
+            return not hasattr(getattr(self.user, key, None), 'alters_data')
+        self.assertTrue(all(map(alters_data, user_details.keys())))
+
+    def test_takes_arguments_hidden(self):
+        """Assure methods that take arguments are hidden"""
+        user_details = get_details(self.get_context()['user'])
+        user_methods = (
+            getattr(self.user, key, None)
+            for key in user_details.keys()
+            if callable(getattr(self.user, key, None))
+        )
+        for method in user_methods:
+            if hasattr(method, 'im_func'):
+                self.assertTrue(method.im_func.func_code.co_argcount <= 1)
+
+    def test_invalid_managers_hidden(self):
+        """
+        Assure managers that aren't accessible from model instances are hidden
+        """
+        user = self.get_context()['user']
+        user_details = get_details(user)
+        invalid_managers = []
+        for attr in dir(user):
+            try:
+                getattr(user, attr)
+            except:
+                invalid_managers.append(attr)
+        self.assertTrue(all([not manager in user_details.keys()
+                             for manager in invalid_managers]))
+
+    def test_set_value_method(self):
+        """Assure methods have their value set to 'method'"""
+        user_details = get_details(self.get_context()['user'])
+        for key, value in list(user_details.items()):
+            if callable(getattr(self.user, key, None)):
+                self.assertEqual(value, 'method')
+
+    def test_set_value_managers(self):
+        user = self.get_context()['user']
+        user_details = get_details(user)
+        managers = []
+        for key in user_details.keys():
+            value = getattr(self.user, key, None)
+            kls = getattr(getattr(value, '__class__', ''), '__name__', '')
+            if kls in ('ManyRelatedManager', 'RelatedManager'):
+                managers.append(key)
+        for key, value in user_details.items():
+            if key in managers:
+                self.assertTrue(value in
+                                ('ManyRelatedManager', 'RelatedManager')
+                )
+
+    def test_module_and_class_added(self):
+        user_details = get_details(self.get_context()['user'])
+        self.assertEqual(user_details['META_module_name'],
+                         'django.utils.functional')
+        self.assertEqual(user_details['META_class_name'], 'User')

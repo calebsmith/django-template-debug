@@ -38,9 +38,9 @@ def get_details(var):
     module = getattr(var, '__module__', '')
     kls = getattr(getattr(var, '__class__', ''), '__name__', '')
     if module:
-        var_data['META_module name'] = module
+        var_data['META_module_name'] = module
     if kls:
-        var_data['META_class name'] = kls
+        var_data['META_class_name'] = kls
     for attr in dir(var):
         value = _get_detail_value(var, attr)
         if value is not None:

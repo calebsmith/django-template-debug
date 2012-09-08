@@ -16,7 +16,6 @@ from template_debug.utils import get_variables, get_details, find_func
 
 register = template.Library()
 TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
-PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
 
 
 def require_template_debug(f):
