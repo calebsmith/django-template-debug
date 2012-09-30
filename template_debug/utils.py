@@ -113,22 +113,35 @@ def _find_func_or_closures(var):
     """
     if callable(var):
         im_func = _find_func_im_func(var)
-        if not im_func.func_closure:
-            func_code = im_func.func_code
-            filename = func_code.co_filename
-            funcname = im_func.func_name
-            filename = filename.lstrip(PROJECT_ROOT)
-            lineno = unicode(func_code.co_firstlineno)
-            return [':'.join((funcname, filename, lineno))]
+        closures = im_func.func_closure
+        if closures:
+            return _find_closures(closures)
         else:
-            results = []
-            for closure in im_func.func_closure:
-                contents = closure.cell_contents
-                if isinstance(contents, Iterable):
-                    for content in contents:
-                        results.append(_find_func_or_closures(content))
-                else:
-                    results.append(_find_func_or_closures(contents))
-            return results
+            return _find_func_details(im_func)
     else:
         return [None]
+
+
+def _find_func_details(im_func):
+    """
+    Given a function's im_func return : delimited string of the function's
+    name, filename, and line number.
+    """
+    func_code = im_func.func_code
+    filename = func_code.co_filename
+    funcname = im_func.func_name
+    filename = filename.lstrip(PROJECT_ROOT)
+    lineno = unicode(func_code.co_firstlineno)
+    return [':'.join((funcname, filename, lineno))]
+
+
+def _find_closures(closures):
+    results = []
+    for closure in closures:
+        contents = closure.cell_contents
+        if isinstance(contents, Iterable):
+            for content in contents:
+                results.append(_find_func_or_closures(content))
+        else:
+            results.append(_find_func_or_closures(contents))
+    return results
