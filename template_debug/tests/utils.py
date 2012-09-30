@@ -1,4 +1,5 @@
 from copy import copy
+from functools import wraps
 
 from template_debug.tests.base import TemplateDebugTestCase
 from template_debug.utils import _flatten, get_variables, get_details
@@ -143,3 +144,71 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         self.assertEqual(user_details['META_module_name'],
                          'django.utils.functional')
         self.assertEqual(user_details['META_class_name'], 'User')
+
+
+
+def test_decorator(f):
+    @wraps
+    def _(*args, **kwargs):
+        return f(*args, **kwargs)
+    return _
+
+
+@test_decorator
+def test_wrapped_func():
+    return 'result'
+
+
+def test_func():
+    return 'result'
+
+
+class FindFuncImFuncTestCase(TemplateDebugTestCase):
+
+    def test_find_func_im_func_returns_im_func(self):
+        """Assure function with an im_func returns the im_func"""
+        pass
+
+    def test_find_func_im_func_no_im_func(self):
+        """Assure function without an im_func returns itself"""
+        pass
+
+
+class FindFuncDetails(TemplateDebugTestCase):
+
+    def test_find_func_details_returns_meta(self):
+        """
+        Given an im_func, assure find_func_details returns a list of one string
+        with name, filename, and line number.
+        """
+
+    def test_find_func_im_func(var):
+        """
+        Given a variable, return its im_func if possible, otherwise return the
+        variable
+        """
+
+    def test_find_func_or_closures(var):
+        """
+        Given a variable, return a list of function meta data if the variable
+        is a callable, otherwise return [None]
+        """
+        # Test not callable
+        # test has closures
+        # test a function without closures
+
+    def test_find_func(self):
+        """
+        Given a variable, return function meta data if possible. If the
+        function has closures, return a best guess based on the function's name
+        Integration Test
+        """
+        pass
+
+    def test_find_closures(self):
+        """
+        Assure that given an iterable of function closures, an iterable of its
+        contents are returned. If the iterable are themselves closures, these
+        closures are followed recursively until all contents are appended.
+        """
+        pass
