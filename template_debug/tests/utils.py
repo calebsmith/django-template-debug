@@ -2,7 +2,9 @@ from copy import copy
 from functools import wraps
 
 from template_debug.tests.base import TemplateDebugTestCase
-from template_debug.utils import _flatten, get_variables, get_details
+from template_debug.utils import (_flatten, get_variables, get_details,
+    find_func, _find_func_im_func, _find_func_or_closures, _find_func_details,
+    _find_closures)
 
 
 class FlattenTestCase(TemplateDebugTestCase):
@@ -146,6 +148,10 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         self.assertEqual(user_details['META_class_name'], 'User')
 
 
+"""
+Code stubs for testing function introspection utilities.
+"""
+
 
 def test_decorator(f):
     @wraps
@@ -163,39 +169,44 @@ def test_func():
     return 'result'
 
 
+class TestClass:
+
+    def test_method(self):
+        pass
+
+
 class FindFuncImFuncTestCase(TemplateDebugTestCase):
 
     def test_find_func_im_func_returns_im_func(self):
-        """Assure function with an im_func returns the im_func"""
-        pass
+        """Assure a method (with an im_func) returns the im_func"""
+        method = TestClass.test_method
+        self.assertEqual(_find_func_im_func(method), method.im_func)
 
     def test_find_func_im_func_no_im_func(self):
         """Assure function without an im_func returns itself"""
+        func = test_func
+        self.assertEqual(_find_func_im_func(func), func)
+
+
+class FindFuncOrClosureTestCase(TemplateDebugTestCase):
+
+    def test_not_callable(self):
+        pass
+
+    def test_find_function_no_closures(self):
+        pass
+
+    def test_find_function_with_a_decorator(self):
         pass
 
 
-class FindFuncDetails(TemplateDebugTestCase):
+class FindFuncIntegrationTestCase(TemplateDebugTestCase):
 
     def test_find_func_details_returns_meta(self):
         """
         Given an im_func, assure find_func_details returns a list of one string
         with name, filename, and line number.
         """
-
-    def test_find_func_im_func(var):
-        """
-        Given a variable, return its im_func if possible, otherwise return the
-        variable
-        """
-
-    def test_find_func_or_closures(var):
-        """
-        Given a variable, return a list of function meta data if the variable
-        is a callable, otherwise return [None]
-        """
-        # Test not callable
-        # test has closures
-        # test a function without closures
 
     def test_find_func(self):
         """
