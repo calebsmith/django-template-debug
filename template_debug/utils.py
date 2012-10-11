@@ -6,7 +6,9 @@ PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
 
 
 def _flatten(iterable):
-    """Given an iterable with nested iterables, generate a flat iterable"""
+    """
+    Given an iterable with nested iterables, generate a flat iterable
+    """
     for i in iterable:
         if isinstance(i, Iterable) and not isinstance(i, basestring):
             for sub_i in _flatten(i):
@@ -19,13 +21,15 @@ def get_variables(context):
     """
     Given a context, return a sorted list of variable names in the context
     """
-    availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
+    variables = set(_flatten(
+        (dicts.keys() for dicts in context.dicts)
+    ))
     # Don't show the rendering tree 'block' as a variable in the context
     try:
-        availables.remove('block')
+        variables.remove('block')
     except KeyError:
         pass
-    return sorted(list(availables))
+    return sorted(list(variables))
 
 
 def get_details(var):
