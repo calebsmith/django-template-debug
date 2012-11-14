@@ -21,7 +21,7 @@ setup(
     include_package_data=True,
     url='https://github.com/calebsmith/django-template-debug',
     license='BSD',
-    description=u' '.join(__import__('template_debug').__doc__.splitlines()).strip(),
+    description=' '.join(__import__('template_debug').__doc__.splitlines()).strip(),
     classifiers=[
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',

@@ -2,6 +2,8 @@
 Template tags that aid in common debugging scenarios.
 """
 
+from __future__ import unicode_literals
+
 try:
     import ipdb as pdb
 except ImportError:
@@ -67,7 +69,7 @@ def find(var):
     callable, return the string "Not a callable"
     """
     func_details = find_func(var)
-    return func_details if func_details else u'Not a callable'
+    return func_details if func_details else 'Not a callable'
 
 
 @require_template_debug

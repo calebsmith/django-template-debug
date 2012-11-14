@@ -9,33 +9,40 @@ from template_debug.utils import (_flatten, get_variables, get_details,
     _find_closures)
 
 
+try:
+    from django.utils.six import PY3
+except ImportError:
+    range = xrange
+    PY3 = False
+
+
 class FlattenTestCase(TemplateDebugTestCase):
     """TestCase for _flatten"""
 
     def test_flattens_inner_list(self):
         "Assure arbitrarily nested lists are flattened"
         nested_list = [1, [2, [3, 4, [5], ], 6, 7], 8]
-        self.assertEqual(list(_flatten(nested_list)), range(1, 9))
+        self.assertEqual(list(_flatten(nested_list)), list(range(1, 9)))
 
     def test_flattens_tuples(self):
         "Assure nested tuples are also flattened"
         nested_tuples = (1, (2, 3, (4, ), 5), 6)
-        self.assertEqual(list(_flatten(nested_tuples)), range(1, 7))
+        self.assertEqual(list(_flatten(nested_tuples)), list(range(1, 7)))
 
     def test_flattens_sets(self):
         "Assure nested sets are flattened"
         nested_sets = set([1, frozenset([2, 3]), 4])
-        self.assertEqual(list(_flatten(nested_sets)), range(1, 5))
+        self.assertEqual(list(_flatten(nested_sets)), list(range(1, 5)))
 
     def test_flatten_nested_combinations(self):
         "Assure nested iterables are flattened"
         nested = [1, frozenset([2, 3]), (4, (5,), 6), [7], 8]
-        self.assertEqual(list(_flatten(nested)), range(1, 9))
+        self.assertEqual(list(_flatten(nested)), list(range(1, 9)))
 
     def test_flatten_generator(self):
         "Assure generators are flattened"
-        gens = [1, xrange(2, 4), (num for num in (4, xrange(5, 7)))]
-        self.assertEqual(list(_flatten(gens)), range(1, 7))
+        gens = [1, list(range(2, 4)), (num for num in (4, list(range(5, 7))))]
+        self.assertEqual(list(_flatten(gens)), list(range(1, 7)))
 
     def test_flatten_string_unchanged(self):
         "Assure strings are left intact"
@@ -58,7 +65,7 @@ class GetVariablesTestCase(TemplateDebugTestCase):
         self.known_globals = ['request', 'user']
 
     def _get_context(self, dict_=None, processors=None):
-        return RequestContext(self.request, dict_=dict_, processors=processors)
+        return RequestContext(self.request, dict_, processors=processors)
 
     def test_global_context_processors(self):
         """

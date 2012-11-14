@@ -1,6 +1,16 @@
+from __future__ import unicode_literals
 from collections import Iterable
 
 from django.conf import settings
+
+
+try:
+    from django.utils.six import PY3, string_types
+except ImportError:
+    # Django < 1.5. No Python 3 support
+    PY3 = False
+    string_types = basestring
+
 
 PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
 
@@ -10,7 +20,7 @@ def _flatten(iterable):
     Given an iterable with nested iterables, generate a flat iterable
     """
     for i in iterable:
-        if isinstance(i, Iterable) and not isinstance(i, basestring):
+        if isinstance(i, Iterable) and not isinstance(i, string_types):
             for sub_i in _flatten(i):
                 yield sub_i
         else:
