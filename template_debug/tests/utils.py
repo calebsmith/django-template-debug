@@ -168,14 +168,10 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         self.assertEqual(user_details['META_class_name'], 'User')
 
 
-"""
-Code stubs for testing function introspection utilities.
-"""
-
-
 def test_decorator(f):
     def _(*args, **kwargs):
         return f(*args, **kwargs)
+    _.__name__ = f.__name__
     return _
 
 
@@ -214,6 +210,7 @@ class FindFuncImFuncTestCase(FindFuncMetaTestCase):
         self.assertEqual(_find_func_im_func(self.func), self.func)
 
     def test_decorated(self):
+        """Assure a decorated function, which has no im_func, returns itself"""
         self.assertEqual(_find_func_im_func(self.wrapped_func),
             self.wrapped_func
         )
@@ -222,16 +219,22 @@ class FindFuncImFuncTestCase(FindFuncMetaTestCase):
 class FindFuncNameTestCase(FindFuncMetaTestCase):
 
     def test_name_of_method(self):
+        """Assure passing a class'es instance method returns its name"""
         im_func = _find_func_im_func(self.method)
         self.assertEqual(_find_func_name(im_func), 'test_method')
 
     def test_name_of_function(self):
+        """Assure passing a function returns its name"""
         im_func = _find_func_im_func(self.func)
         self.assertEqual(_find_func_name(im_func), 'test_func')
 
     def test_name_of_decorator(self):
+        """
+        Assure passing a decorated function returns the name of the original
+        function
+        """
         im_func = _find_func_im_func(self.wrapped_func)
-        self.assertEqual(_find_func_name(im_func), '_')
+        self.assertEqual(_find_func_name(im_func), 'test_wrapped_func')
 
 
 class FindClosurePointerTestCase(FindFuncMetaTestCase):
@@ -247,6 +250,11 @@ class FindClosurePointerTestCase(FindFuncMetaTestCase):
     def test_decorated_function(self):
         im_func = _find_func_im_func(self.wrapped_func)
         self.assertEqual(len(_find_closure_pointer(im_func)), 1)
+
+
+"""
+Code stubs for testing function introspection utilities.
+"""
 
 
 class FindFuncOrClosureTestCase(TemplateDebugTestCase):

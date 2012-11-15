@@ -131,7 +131,7 @@ def _find_closure_pointer(func):
     if pointer is False:
         pointer = getattr(func, '__closure__', False)
         if pointer is False:
-            func = getattr(func, 'func', None)
+            func = getattr(func, 'func', False)
             if func:
                 pointer = getattr(func, '__closure__', None)
     return pointer if pointer is not False else None
