@@ -96,10 +96,7 @@ def _get_detail_value(var, attr):
 
 def find_func(var):
     im_func = _find_func_im_func(var)
-    try:
-        original_name = im_func.func_name
-    except AttributeError:
-        return None
+    original_name = _find_func_name(im_func)
     func_closures = _flatten(_find_func_or_closures(var))
     for func in filter(lambda x: x, func_closures):
         funcname = func.split(':')[0]
@@ -117,6 +114,29 @@ def _find_func_im_func(var):
     return getattr(var, 'im_func', var)
 
 
+def _find_func_name(func):
+    """
+    Given a function, return its name via func_name if available, otherwise
+    __name__. If __name__ is not available, return None
+    """
+    return getattr(func, 'func_name', getattr(func, '__name__', None))
+
+
+def _find_closure_pointer(func):
+    """
+    Given a function, return its closures via func_closures if available,
+    otherwise __closure__
+    """
+    pointer = getattr(func, 'func_closure', False)
+    if pointer is False:
+        pointer = getattr(func, '__closure__', False)
+        if pointer is False:
+            func = getattr(func, 'func', None)
+            if func:
+                pointer = getattr(func, '__closure__', None)
+    return pointer if pointer is not False else None
+
+
 def _find_func_or_closures(var):
     """
     Given a callable, return a list of strings that are : delimited and
@@ -127,11 +147,9 @@ def _find_func_or_closures(var):
     """
     if callable(var):
         im_func = _find_func_im_func(var)
-        closures = im_func.func_closure
-        if closures:
-            return _find_closures(closures)
-        else:
-            return _find_func_details(im_func)
+        closures = _find_closure_pointer(im_func)
+        return _find_closures(closures) \
+            if closures else _find_func_details(im_func)
     else:
         return [None]
 

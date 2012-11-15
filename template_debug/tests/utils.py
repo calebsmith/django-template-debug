@@ -6,7 +6,7 @@ from django.test.client import RequestFactory
 from template_debug.tests.base import TemplateDebugTestCase
 from template_debug.utils import (_flatten, get_variables, get_details,
     find_func, _find_func_im_func, _find_func_or_closures, _find_func_details,
-    _find_closures)
+    _find_closures, _find_func_name, _find_closure_pointer)
 
 
 try:
@@ -174,7 +174,6 @@ Code stubs for testing function introspection utilities.
 
 
 def test_decorator(f):
-    @wraps
     def _(*args, **kwargs):
         return f(*args, **kwargs)
     return _
@@ -195,17 +194,59 @@ class TestClass:
         pass
 
 
-class FindFuncImFuncTestCase(TemplateDebugTestCase):
+class FindFuncMetaTestCase(TemplateDebugTestCase):
 
-    def test_find_func_im_func_returns_im_func(self):
+    def setUp(self):
+        self.method = TestClass.test_method
+        self.func = test_func
+        self.wrapped_func = test_wrapped_func
+
+
+class FindFuncImFuncTestCase(FindFuncMetaTestCase):
+
+    def test_with_im_func_returns_im_func(self):
         """Assure a method (with an im_func) returns the im_func"""
-        method = TestClass.test_method
-        self.assertEqual(_find_func_im_func(method), method.im_func)
+        expected = self.method if PY3 else self.method.im_func
+        self.assertEqual(_find_func_im_func(self.method), expected)
 
-    def test_find_func_im_func_no_im_func(self):
+    def test_no_im_func(self):
         """Assure function without an im_func returns itself"""
-        func = test_func
-        self.assertEqual(_find_func_im_func(func), func)
+        self.assertEqual(_find_func_im_func(self.func), self.func)
+
+    def test_decorated(self):
+        self.assertEqual(_find_func_im_func(self.wrapped_func),
+            self.wrapped_func
+        )
+
+
+class FindFuncNameTestCase(FindFuncMetaTestCase):
+
+    def test_name_of_method(self):
+        im_func = _find_func_im_func(self.method)
+        self.assertEqual(_find_func_name(im_func), 'test_method')
+
+    def test_name_of_function(self):
+        im_func = _find_func_im_func(self.func)
+        self.assertEqual(_find_func_name(im_func), 'test_func')
+
+    def test_name_of_decorator(self):
+        im_func = _find_func_im_func(self.wrapped_func)
+        self.assertEqual(_find_func_name(im_func), '_')
+
+
+class FindClosurePointerTestCase(FindFuncMetaTestCase):
+
+    def test_method(self):
+        im_func = _find_func_im_func(self.method)
+        self.assertEqual(_find_closure_pointer(im_func), None)
+
+    def test_function_no_closure(self):
+        im_func = _find_func_im_func(self.func)
+        self.assertEqual(_find_closure_pointer(im_func), None)
+
+    def test_decorated_function(self):
+        im_func = _find_func_im_func(self.wrapped_func)
+        self.assertEqual(len(_find_closure_pointer(im_func)), 1)
 
 
 class FindFuncOrClosureTestCase(TemplateDebugTestCase):
