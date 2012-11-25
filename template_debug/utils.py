@@ -104,7 +104,7 @@ def is_valid_in_template(var, attr):
         else:
             # Remove any routines that require arguments
             argspec = getargspec(value)
-            num_args = len(argspec.args)
+            num_args = len(argspec.args) if argspec.args else 0
             num_defaults = len(argspec.defaults) if argspec.defaults else 0
             if num_args - num_defaults > 1:
                 return False
