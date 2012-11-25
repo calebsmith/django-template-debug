@@ -13,7 +13,7 @@ from pprint import pprint
 from django.conf import settings
 from django import template
 
-from template_debug.utils import get_variables, get_details, find_func
+from template_debug.utils import get_variables, get_details
 
 
 register = template.Library()
@@ -58,18 +58,6 @@ def details(var):
     their corresponding values.
     """
     _display_details(get_details(var))
-
-
-@require_template_debug
-@register.simple_tag
-def find(var):
-    """
-    Given a callable, return a string with the function's name, filename
-    (minus PROJECT_ROOT if present), a colon separator and the line number. If the object is not
-    callable, return the string "Not a callable"
-    """
-    func_details = find_func(var)
-    return func_details if func_details else 'Not a callable'
 
 
 @require_template_debug

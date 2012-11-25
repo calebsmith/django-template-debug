@@ -12,9 +12,6 @@ except ImportError:
     string_types = basestring
 
 
-PROJECT_ROOT = getattr(settings, 'PROJECT_ROOT', '')
-
-
 def _flatten(iterable):
     """
     Given an iterable with nested iterables, generate a flat iterable
@@ -92,88 +89,3 @@ def _get_detail_value(var, attr):
         if kls in ('ManyRelatedManager', 'RelatedManager'):
             value = kls
         return value
-
-
-def find_func(var):
-    im_func = _find_func_im_func(var)
-    original_name = _find_func_name(im_func)
-    func_closures = _flatten(_find_func_or_closures(var))
-    for func in filter(lambda x: x, func_closures):
-        funcname = func.split(':')[0]
-        if funcname == original_name:
-            return func
-    # If original name couldn't be found, return a best guess
-    return func
-
-
-def _find_func_im_func(var):
-    """
-    Given a variable, return im_func if available, otherwise return the
-    variable
-    """
-    return getattr(var, 'im_func', var)
-
-
-def _find_func_name(func):
-    """
-    Given a function, return its name via func_name if available, otherwise
-    __name__. If __name__ is not available, return None
-    """
-    return getattr(func, 'func_name', getattr(func, '__name__', None))
-
-
-def _find_closure_pointer(func):
-    """
-    Given a function, return its closures via func_closures if available,
-    otherwise __closure__
-    """
-    pointer = getattr(func, 'func_closure', False)
-    if pointer is False:
-        pointer = getattr(func, '__closure__', False)
-        if pointer is False:
-            func = getattr(func, 'func', False)
-            if func:
-                pointer = getattr(func, '__closure__', None)
-    return pointer if pointer is not False else None
-
-
-def _find_func_or_closures(var):
-    """
-    Given a callable, return a list of strings that are : delimited and
-    represent function meta data in the format: "name:filename:line_number".
-    If the argument is not callable return [None]. A callable with closures
-    returns a list of meta data strings such as:
-        [name:filename:line_number, ...]
-    """
-    if callable(var):
-        im_func = _find_func_im_func(var)
-        closures = _find_closure_pointer(im_func)
-        return _find_closures(closures) \
-            if closures else _find_func_details(im_func)
-    else:
-        return [None]
-
-
-def _find_func_details(im_func):
-    """
-    Given a function's im_func return : delimited string of the function's
-    name, filename, and line number.
-    """
-    func_code = im_func.func_code
-    filename = func_code.co_filename
-    funcname = im_func.func_name
-    filename = filename.lstrip(PROJECT_ROOT)
-    lineno = unicode(func_code.co_firstlineno)
-    return [':'.join((funcname, filename, lineno))]
-
-
-def _find_closures(closures):
-    results = []
-    for closure in closures:
-        contents = closure.cell_contents
-        if isinstance(contents, Iterable):
-            for content in contents:
-                results.append(_find_func_or_closures(content))
-        else:
-            results.append(_find_func_or_closures(contents))
-    return results
