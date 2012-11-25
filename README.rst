@@ -67,3 +67,4 @@ When using {% set_trace %}, one can use details and variables as functions as fo
     variables(context)
 
 Type 'c' to continue rendering the template as normal
+
