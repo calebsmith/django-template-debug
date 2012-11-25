@@ -1,8 +1,8 @@
-from django.template import RequestContext
 from django.test.client import RequestFactory
 
 from template_debug.tests.base import TemplateDebugTestCase
-from template_debug.utils import _flatten, get_variables, get_details
+from template_debug.utils import (_flatten, get_variables, get_details,
+    is_valid_in_template, get_attributes)
 
 
 try:
@@ -60,31 +60,105 @@ class GetVariablesTestCase(TemplateDebugTestCase):
         self.request = factory.get('/foo/')
         self.known_globals = ['request', 'user']
 
-    def _get_context(self, dict_=None, processors=None):
-        return RequestContext(self.request, dict_, processors=processors)
-
     def test_global_context_processors(self):
         """
         Assure get_variables contains known global context processors such as
         request and user
         """
-        variables = set(get_variables(self._get_context()))
+        variables = set(get_variables(self._get_context(self.request)))
         self.assertTrue(variables.issuperset(set(self.known_globals)))
 
     def test_returned_variable(self):
         """
         Assure get_variables returns variables unique to the context
         """
-        variables = get_variables(self._get_context({}))
+        variables = get_variables(self._get_context(self.request, {}))
         self.assertTrue('a' not in variables)
-        variables = get_variables(self._get_context({'a': 3}))
+        variables = get_variables(self._get_context(self.request, {'a': 3}))
         self.assertTrue('a' in variables)
 
     def test_custom_processors(self):
-        variables = get_variables(self._get_context({}, processors=[]))
+        variables = get_variables(self._get_context(
+            self.request, {}, processors=[])
+        )
         self.assertTrue('custom_processor_var' not in variables)
-        variables = get_variables(self._get_context({}, processors=[test_processor]))
+        variables = get_variables(self._get_context(
+            self.request, {}, processors=[test_processor])
+        )
         self.assertTrue('custom_processor_var' in variables)
+
+
+class TestClass(object):
+
+    def _private(self):
+        return 'private'
+
+    def takes_args(self, x):
+        return x
+
+    def alters_data(self):
+        return 'data was changed'
+    alters_data.alters_data = True
+
+    def valid_method(self):
+        return True
+
+    def has_kwargs(self, foobars=None):
+        return foobars
+
+
+class IsValidInTemplateTestCase(TemplateDebugTestCase):
+
+    def setUp(self):
+        request = RequestFactory().get('/foo/')
+        test_object = TestClass()
+        context = self._get_context(request, {'test_object': test_object})
+        self.test_object = context['test_object']
+
+    def test_private(self):
+        is_valid = is_valid_in_template(self.test_object, '_private')
+        self.assertEqual(is_valid, False,
+            'is_valid should be false for private methods'
+        )
+
+    def test_takes_args(self):
+        is_valid = is_valid_in_template(self.test_object, 'takes_args')
+        self.assertEqual(is_valid, False,
+            'is_valid should be false methods that require arguments'
+        )
+
+    def test_alters_data(self):
+        is_valid = is_valid_in_template(self.test_object, 'alters_data')
+        self.assertEqual(is_valid, False,
+            'is_valid should be false for the methods with .alters_data = True'
+        )
+
+    def test_valid_method(self):
+        is_valid = is_valid_in_template(self.test_object, 'valid_method')
+        self.assertEqual(is_valid, True,
+            'is_valid should be true for methods that are accessible to templates'
+        )
+
+    def test_has_kwargs(self):
+        is_valid = is_valid_in_template(self.test_object, 'has_kwargs')
+        self.assertEqual(is_valid, True,
+            'is_valid should be true for methods that take kwargs'
+        )
+
+
+class GetAttributesTestCase(TemplateDebugTestCase):
+
+    def setUp(self):
+        request = RequestFactory().get('/foo/')
+        test_object = TestClass()
+        context = self._get_context(request, {'test_object': test_object})
+        self.test_object = context['test_object']
+
+    def test_valid_list(self):
+        valid_attributes = set(get_attributes(self.test_object))
+        self.assertEqual(set(['has_kwargs', 'valid_method']), valid_attributes,
+            'has_kwargs and valid_method are the only valid routines of TestObject'
+        )
 
 
 class GetDetailsTestCase(TemplateDebugTestCase):
@@ -92,33 +166,6 @@ class GetDetailsTestCase(TemplateDebugTestCase):
     def setUp(self):
         self.user = self.create_user(username='test', password='test')
         self.client.login(username='test', password='test')
-
-    def test_private_hidden(self):
-        """Assure private methods aren't shown"""
-        user_details = get_details(self.get_context()['user'])
-        self.assertTrue(all([not key.startswith('_')
-                             for key in user_details.keys()]))
-
-    def test_alters_data_hidden(self):
-        """Assure methods that alter data are hidden"""
-        user_details = get_details(self.get_context()['user'])
-
-        def alters_data(key):
-            "Given key, returns true if user.key.alters_data = True"
-            return not hasattr(getattr(self.user, key, None), 'alters_data')
-        self.assertTrue(all(map(alters_data, user_details.keys())))
-
-    def test_takes_arguments_hidden(self):
-        """Assure methods that take arguments are hidden"""
-        user_details = get_details(self.get_context()['user'])
-        user_methods = (
-            getattr(self.user, key, None)
-            for key in user_details.keys()
-            if callable(getattr(self.user, key, None))
-        )
-        for method in user_methods:
-            if hasattr(method, 'im_func'):
-                self.assertTrue(method.im_func.func_code.co_argcount <= 1)
 
     def test_invalid_managers_hidden(self):
         """

@@ -1,8 +1,7 @@
 from __future__ import unicode_literals
 from functools import partial
 from collections import Iterable
-
-from django.conf import settings
+from inspect import getargspec, isroutine
 
 
 try:
@@ -98,17 +97,15 @@ def is_valid_in_template(var, attr):
         value = getattr(var, attr)
     except:
         return False
-    # Remove any callables that are flagged with 'alters_data'
-    if callable(value):
+    if isroutine(value):
+        # Remove any routines that are flagged with 'alters_data'
         if getattr(value, 'alters_data', False):
             return False
         else:
-            # Remove any callables that require arguments
-            value_or_im_func = getattr(value, 'im_func', value)
-            if PY3 and hasattr(value, '__func__'):
-                if value.__func__.__code__.co_argcount > 1:
-                    return False
-            elif hasattr(value_or_im_func, 'func_code'):
-                if value_or_im_func.func_code.co_argcount > 1:
-                    return False
+            # Remove any routines that require arguments
+            argspec = getargspec(value)
+            num_args = len(argspec.args)
+            num_defaults = len(argspec.defaults) if argspec.defaults else 0
+            if num_args - num_defaults > 1:
+                return False
     return True
