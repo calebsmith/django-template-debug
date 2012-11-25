@@ -17,13 +17,13 @@ from template_debug.utils import get_variables, get_details
 
 
 register = template.Library()
-TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
 
 
 def require_template_debug(f):
     """Decorated function is a no-op if TEMPLATE_DEBUG is False"""
     def _(*args, **kwargs):
-        return f(*args, **kwargs) if TEMPLATE_DEBUG else None
+        TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
+        return f(*args, **kwargs) if TEMPLATE_DEBUG else ''
     return _
 
 
@@ -48,6 +48,7 @@ def variables(context):
     """
     availables = get_variables(context)
     pprint(availables)
+    return availables
 
 
 @require_template_debug
@@ -57,7 +58,9 @@ def details(var):
     Prints a dictionary showing the attributes of a variable, and if possible,
     their corresponding values.
     """
-    _display_details(get_details(var))
+    var_details = get_details(var)
+    _display_details(var_details)
+    return var_details
 
 
 @require_template_debug
@@ -76,3 +79,4 @@ def set_trace(context):
     for var in availables:
         locals()[var] = context[var]
     pdb.set_trace()
+    return ''
