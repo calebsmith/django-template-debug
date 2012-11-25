@@ -54,6 +54,11 @@ def variables(context):
 @require_template_debug
 @register.simple_tag
 def attributes(var):
+    """
+    Given a variable in the template's context, print and return the list of
+    attributes thare accessible inside of the template. For example, private
+    attributes or callables that require arguments are excluded.
+    """
     attrs = get_attributes(var)
     pprint(attrs)
     return attrs

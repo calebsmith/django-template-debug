@@ -62,10 +62,9 @@ def get_details(var):
 
 def _get_detail_value(var, attr):
     """
-    Given a variable and one of its attributes, return its value. Return None
-    if var.attribute raises an exception, is private (starts with _), or is
-    a callable that is flagged with alters_data. Callables and Django ORM
-    managers return as strings indicating 'method' or another friendly name.
+    Given a variable and one of its attributes that are available inside of
+    a template, return its 'method' if it is a callable, its class name if it
+    is a model manager, otherwise return its value
     """
     value = getattr(var, attr)
     if callable(value):
@@ -78,6 +77,10 @@ def _get_detail_value(var, attr):
 
 
 def get_attributes(var):
+    """
+    Given a varaible, return the list of attributes that are available inside
+    of a template
+    """
     is_valid = partial(is_valid_in_template, var)
     return filter(is_valid, dir(var))
 
