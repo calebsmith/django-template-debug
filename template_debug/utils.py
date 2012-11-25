@@ -105,9 +105,10 @@ def is_valid_in_template(var, attr):
         else:
             # Remove any callables that require arguments
             value_or_im_func = getattr(value, 'im_func', value)
-            # FIXME: Python3 compatibility in question wrt checking for
-            # argument count of a function
-            if hasattr(value_or_im_func, 'func_code'):
+            if PY3 and hasattr(value, '__func__'):
+                if value.__func__.__code__.co_argcount > 1:
+                    return False
+            elif hasattr(value_or_im_func, 'func_code'):
                 if value_or_im_func.func_code.co_argcount > 1:
                     return False
     return True
