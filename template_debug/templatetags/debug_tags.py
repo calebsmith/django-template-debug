@@ -13,7 +13,7 @@ from pprint import pprint
 from django.conf import settings
 from django import template
 
-from template_debug.utils import get_variables, get_details
+from template_debug.utils import get_variables, get_details, get_attributes
 
 
 register = template.Library()
@@ -49,6 +49,14 @@ def variables(context):
     availables = get_variables(context)
     pprint(availables)
     return availables
+
+
+@require_template_debug
+@register.simple_tag
+def attributes(var):
+    attrs = get_attributes(var)
+    pprint(attrs)
+    return attrs
 
 
 @require_template_debug
