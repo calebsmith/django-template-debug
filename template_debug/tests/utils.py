@@ -187,7 +187,7 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         user_details = get_details(self.get_context()['user'])
         for key, value in list(user_details.items()):
             if callable(getattr(self.user, key, None)):
-                self.assertEqual(value, 'method')
+                self.assertEqual(value, 'routine')
 
     def test_set_value_managers(self):
         user = self.get_context()['user']
@@ -201,7 +201,7 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         for key, value in user_details.items():
             if key in managers:
                 self.assertTrue(value in
-                                ('ManyRelatedManager', 'RelatedManager')
+                    ('ManyRelatedManager', 'RelatedManager')
                 )
 
     def test_module_and_class_added(self):

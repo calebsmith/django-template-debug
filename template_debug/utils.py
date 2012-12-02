@@ -67,7 +67,7 @@ def _get_detail_value(var, attr):
     """
     value = getattr(var, attr)
     if callable(value):
-        return 'method'
+        return 'routine'
     # Rename common Django class names
     kls = getattr(getattr(value, '__class__', ''), '__name__', '')
     if kls in ('ManyRelatedManager', 'RelatedManager'):
