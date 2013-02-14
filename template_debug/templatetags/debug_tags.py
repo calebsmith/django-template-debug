@@ -12,6 +12,7 @@ from pprint import pprint
 
 from django.conf import settings
 from django import template
+import socket
 
 from template_debug.utils import get_variables, get_details, get_attributes
 
@@ -110,16 +111,19 @@ def pydevd(context):
     
     try:
         import pydevd
-        import socket
-        availables = get_variables(context)
-        for var in availables:
-            locals()[var] = context[var]
-        pydevd.settrace()
-    
-    except socket.error:
-        pdevd_not_available = True
-        
     except ImportError:
+        pdevd_not_available = True
+        return ''
+    
+    availables = get_variables(context)
+    for var in availables:
+        locals()[var] = context[var]
+    
+    #catch the case where no client is listening
+    try:
+        pydevd.settrace()
+    except socket.error:
         pdevd_not_available = True
     
     return ''
+
