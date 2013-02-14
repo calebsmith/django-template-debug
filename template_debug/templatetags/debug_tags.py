@@ -93,3 +93,33 @@ def set_trace(context):
         locals()[var] = context[var]
     pdb.set_trace()
     return ''
+
+
+#cache a socket error when doing pydevd.settrace, to allow running without debugger
+pdevd_not_available = False
+
+@require_template_debug
+@register.simple_tag(takes_context=True)
+def pydevd(context):
+    """
+    Start a pydev settrace
+    """
+    global pdevd_not_available
+    if pdevd_not_available:
+        return ''
+    
+    try:
+        import pydevd
+        import socket
+        availables = get_variables(context)
+        for var in availables:
+            locals()[var] = context[var]
+        pydevd.settrace()
+    
+    except socket.error:
+        pdevd_not_available = True
+        
+    except ImportError:
+        pdevd_not_available = True
+    
+    return ''
