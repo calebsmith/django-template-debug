@@ -2,6 +2,8 @@
 Template tags that aid in common debugging scenarios.
 """
 
+from __future__ import unicode_literals
+
 try:
     import ipdb as pdb
 except ImportError:
@@ -11,6 +13,9 @@ from collections import Iterable
 
 from django.conf import settings
 from django import template
+import socket
+
+from template_debug.utils import get_variables, get_details, get_attributes
 
 try:
     from django.utils.six import string_types
@@ -19,7 +24,6 @@ except ImportError:
     string_types = basestring,
 
 register = template.Library()
-DEBUG = getattr(settings, 'DEBUG', False)
 
 
 def _flatten(iterable):
@@ -31,63 +35,106 @@ def _flatten(iterable):
             yield i
 
 
-def _get_variables(context):
-    if not DEBUG:
-        return []
-    availables = set(_flatten((dicts.keys() for dicts in context.dicts)))
-    try:
-        availables.remove('block')
-    except KeyError:
-        pass
-    return sorted(list(availables))
+def require_template_debug(f):
+    """Decorated function is a no-op if TEMPLATE_DEBUG is False"""
+    def _(*args, **kwargs):
+        TEMPLATE_DEBUG = getattr(settings, 'TEMPLATE_DEBUG', False)
+        return f(*args, **kwargs) if TEMPLATE_DEBUG else ''
+    return _
 
 
+def _display_details(var_data):
+    """
+    Given a dictionary of variable attribute data from get_details display the
+    data in the terminal.
+    """
+    meta_keys = (key for key in list(var_data.keys())
+                 if key.startswith('META_'))
+    for key in meta_keys:
+        display_key = key[5:].capitalize()
+        pprint('{0}: {1}'.format(display_key, var_data.pop(key)))
+    pprint(var_data)
+
+
+@require_template_debug
 @register.simple_tag(takes_context=True)
 def variables(context):
-    availables = _get_variables(context)
-    if DEBUG:
-        pprint(availables)
+    """
+    Given a context, return a flat list of variables available in the context.
+    """
+    availables = get_variables(context)
+    pprint(availables)
     return availables
 
 
-@register.simple_tag(takes_context=True)
-def set_trace(context):
+@require_template_debug
+@register.simple_tag
+def attributes(var):
     """
-    Start a pdb set_trace inside of the template with the context available as
-    'context'. Uses ipdb if available.
+    Given a variable in the template's context, print and return the list of
+    attributes thare accessible inside of the template. For example, private
+    attributes or callables that require arguments are excluded.
     """
-    if DEBUG:
-        print("For best results, pip install ipdb.")
-        print("Variables that are available in the current context:")
-        availables = _get_variables(context)
-        pprint(availables)
-        print('Type `availables` to show this list.')
-        print('Type <variable_name> to access one.')
-        for var in availables:
-            locals()[var] = context[var]
-        pdb.set_trace()
+    attrs = get_attributes(var)
+    pprint(attrs)
+    return attrs
 
 
+@require_template_debug
 @register.simple_tag
 def details(var):
     """
     Prints a dictionary showing the attributes of a variable, and if possible,
     their corresponding values.
     """
-    if DEBUG:
-        module = getattr(var, '__module__', '')
-        kls = getattr(getattr(var, '__class__', ''), '__name__', '')
-        if module:
-            print('Module: {0}'.format(module))
-        if kls:
-            print('Class: {0}'.format(kls))
-        attrs = (attr for attr in dir(var) if not attr.startswith('_'))
-        var_data = {}
-        for attr in attrs:
-            try:
-                value = getattr(var, attr)
-            except:
-                pass
-            else:
-                var_data[attr] = 'method' if callable(value) else value
-        pprint(var_data)
+    var_details = get_details(var)
+    _display_details(var_details)
+    return var_details
+
+
+@require_template_debug
+@register.simple_tag(takes_context=True)
+def set_trace(context):
+    """
+    Start a pdb set_trace inside of the template with the context available as
+    'context'. Uses ipdb if available.
+    """
+    print("For best results, pip install ipdb.")
+    print("Variables that are available in the current context:")
+    availables = get_variables(context)
+    pprint(availables)
+    print('Type `availables` to show this list.')
+    print('Type <variable_name> to access one.')
+    for var in availables:
+        locals()[var] = context[var]
+    pdb.set_trace()
+    return ''
+
+
+#cache a socket error when doing pydevd.settrace, to allow running without debugger
+pdevd_not_available = False
+
+
+@require_template_debug
+@register.simple_tag(takes_context=True)
+def pydevd(context):
+    """
+    Start a pydev settrace
+    """
+    global pdevd_not_available
+    if pdevd_not_available:
+        return ''
+    try:
+        import pydevd
+    except ImportError:
+        pdevd_not_available = True
+        return ''
+    availables = get_variables(context)
+    for var in availables:
+        locals()[var] = context[var]
+    #catch the case where no client is listening
+    try:
+        pydevd.settrace()
+    except socket.error:
+        pdevd_not_available = True
+    return ''
