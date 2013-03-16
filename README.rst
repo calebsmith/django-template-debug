@@ -5,6 +5,10 @@ django-template-debug
 
 A small collection of template tags for debugging and introspecting Django templates
 
+Documentation
+*************
+The documentation is hosted on Read the Docs and is available `here <http://readthedocs.org/docs/django-template-debug/en/latest/index.html>`_
+
 Requirements
 ************
 None, but the latest ipdb is highly recommended.
