@@ -12,6 +12,11 @@ from collections import Iterable
 from django.conf import settings
 from django import template
 
+try:
+    from django.utils.six import string_types
+except ImportError:
+    # Django prior 1.5 version run under python2.x anyway
+    string_types = basestring,
 
 register = template.Library()
 DEBUG = getattr(settings, 'DEBUG', False)
@@ -19,7 +24,7 @@ DEBUG = getattr(settings, 'DEBUG', False)
 
 def _flatten(iterable):
     for i in iterable:
-        if isinstance(i, Iterable) and not isinstance(i, basestring):
+        if isinstance(i, Iterable) and not isinstance(i, string_types):
             for sub_i in _flatten(i):
                 yield sub_i
         else:
