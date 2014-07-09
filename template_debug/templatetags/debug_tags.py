@@ -4,10 +4,6 @@ Template tags that aid in common debugging scenarios.
 
 from __future__ import unicode_literals
 
-try:
-    import ipdb as pdb
-except ImportError:
-    import pdb
 from pprint import pprint
 from collections import Iterable
 
@@ -99,6 +95,10 @@ def set_trace(context):
     Start a pdb set_trace inside of the template with the context available as
     'context'. Uses ipdb if available.
     """
+    try:
+        import ipdb as pdb
+    except ImportError:
+        import pdb
     print("For best results, pip install ipdb.")
     print("Variables that are available in the current context:")
     availables = get_variables(context)
