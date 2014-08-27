@@ -28,15 +28,13 @@ def get_variables(context):
     """
     Given a context, return a sorted list of variable names in the context
     """
-    variables = set(_flatten(
-        (dicts.keys() for dicts in context.dicts)
-    ))
+    variables = set(_flatten(context.dicts))
     # Don't show the rendering tree 'block' as a variable in the context
     try:
         variables.remove('block')
     except KeyError:
         pass
-    return sorted(list(variables))
+    return sorted(variables)
 
 
 def get_details(var):
