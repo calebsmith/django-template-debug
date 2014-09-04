@@ -209,3 +209,8 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         self.assertEqual(user_details['META_module_name'],
                          'django.utils.functional')
         self.assertEqual(user_details['META_class_name'], 'User')
+
+    def test_get_details_c_extensions(self):
+        true = self.get_context()['True']
+        details = get_details(true)
+        self.assertEqual(details['bit_length'], 'routine')
