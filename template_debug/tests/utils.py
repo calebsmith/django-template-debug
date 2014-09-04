@@ -211,6 +211,14 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         self.assertEqual(user_details['META_class_name'], 'User')
 
     def test_get_details_c_extensions(self):
-        true = self.get_context()['True']
-        details = get_details(true)
-        self.assertEqual(details['bit_length'], 'routine')
+        """
+        Ensures get_details works on objects with callables that are
+        implemented in C extensions. inspect.getargspec fails with a TypeError
+        for such callables, and get_details needs to handle this gracefully
+
+        N.B. Only Python >=2.7 has bit_length C routine on Booleans so the test
+        has to be skipped for Python2.6
+        """
+        if hasattr(True, 'bit_length'):
+            details = get_details(True)
+            self.assertEqual(details['bit_length'], 'routine')
