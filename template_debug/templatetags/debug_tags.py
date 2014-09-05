@@ -5,7 +5,6 @@ Template tags that aid in common debugging scenarios.
 from __future__ import unicode_literals
 
 from pprint import pprint
-from collections import Iterable
 
 from django.conf import settings
 from django import template
@@ -13,22 +12,7 @@ import socket
 
 from template_debug.utils import get_variables, get_details, get_attributes
 
-try:
-    from django.utils.six import string_types
-except ImportError:
-    # Django prior 1.5 version run under python2.x anyway
-    string_types = basestring,
-
 register = template.Library()
-
-
-def _flatten(iterable):
-    for i in iterable:
-        if isinstance(i, Iterable) and not isinstance(i, string_types):
-            for sub_i in _flatten(i):
-                yield sub_i
-        else:
-            yield i
 
 
 def require_template_debug(f):
@@ -99,12 +83,13 @@ def set_trace(context):
         import ipdb as pdb
     except ImportError:
         import pdb
-    print("For best results, pip install ipdb.")
+        print("For best results, pip install ipdb.")
     print("Variables that are available in the current context:")
     availables = get_variables(context)
     pprint(availables)
     print('Type `availables` to show this list.')
     print('Type <variable_name> to access one.')
+    # Cram context variables into the local scope
     for var in availables:
         locals()[var] = context[var]
     pdb.set_trace()
