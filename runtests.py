@@ -2,37 +2,17 @@
 import os
 import sys
 
-import django
-from django.conf import settings
-from django.test.utils import get_runner
+# Use the example.settings as the default settings module for testing
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example.settings")
 
+import django
+
+# For Django1.7, load everything
 if hasattr(django, 'setup'):
     django.setup()
 
-if not settings.configured:
-    PROJECT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-    settings.configure(
-        DATABASES={
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': ':memory:',
-            }
-        },
-        INSTALLED_APPS=(
-            'django.contrib.auth',
-            'django.contrib.contenttypes',
-            'template_debug',
-            'example',
-        ),
-        SITE_ID=1,
-        TEMPLATE_DIRS = (
-            os.path.join(PROJECT_PATH, 'example', 'templates'),
-        ),
-        TEMPLATE_LOADERS = (
-            'django.template.loaders.filesystem.Loader',
-            'django.template.loaders.app_directories.Loader',
-        )
-    )
+from django.conf import settings
+from django.test.utils import get_runner
 
 
 def runtests():
