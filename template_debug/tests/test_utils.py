@@ -218,7 +218,10 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         has to be skipped for Python2.6
         """
         if hasattr(True, 'bit_length'):
-            details = get_details(True)
+            try:
+                details = get_details(True)
+            except TypeError:
+                self.fail('Fails to handle C routines for call to inspect.argspec')
             self.assertEqual(details['bit_length'], 'routine')
         user_details = get_details(self.get_context()['user'])
         self.assertTrue(any((
