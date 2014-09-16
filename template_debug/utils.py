@@ -64,12 +64,12 @@ def _get_detail_value(var, attr):
     is a model manager, otherwise return its value
     """
     value = getattr(var, attr)
-    if callable(value):
-        return 'routine'
     # Rename common Django class names
     kls = getattr(getattr(value, '__class__', ''), '__name__', '')
-    if kls in ('ManyRelatedManager', 'RelatedManager'):
-        value = kls
+    if kls in ('ManyRelatedManager', 'RelatedManager', 'EmptyManager'):
+        return kls
+    if callable(value):
+        return 'routine'
     return value
 
 

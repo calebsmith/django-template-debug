@@ -185,9 +185,7 @@ class GetDetailsTestCase(TemplateDebugTestCase):
     def test_set_value_method(self):
         """Assure methods have their value set to 'method'"""
         user_details = get_details(self.get_context()['user'])
-        for key, value in list(user_details.items()):
-            if callable(getattr(self.user, key, None)):
-                self.assertEqual(value, 'routine')
+        self.assertEqual(user_details['get_full_name'], 'routine')
 
     def test_set_value_managers(self):
         user = self.get_context()['user']
@@ -196,16 +194,21 @@ class GetDetailsTestCase(TemplateDebugTestCase):
         for key in user_details.keys():
             value = getattr(self.user, key, None)
             kls = getattr(getattr(value, '__class__', ''), '__name__', '')
-            if kls in ('ManyRelatedManager', 'RelatedManager'):
+            if kls in ('ManyRelatedManager', 'RelatedManager', 'EmptyManager'):
                 managers.append(key)
         for key, value in user_details.items():
             if key in managers:
                 self.assertTrue(value in
-                    ('ManyRelatedManager', 'RelatedManager')
+                    ('ManyRelatedManager', 'RelatedManager', 'EmptyManager',)
                 )
 
     def test_module_and_class_added(self):
         user_details = get_details(self.get_context()['user'])
-        self.assertEqual(user_details['META_module_name'],
-                         'django.utils.functional')
-        self.assertEqual(user_details['META_class_name'], 'User')
+        self.assertTrue(any((
+            user_details['META_module_name'], 'django.contrib.auth.models',
+            user_details['META_module_name'], 'django.utils.functional'
+        )))
+        self.assertTrue(any((
+            user_details['META_class_name'] == 'User',
+            user_details['META_class_name'] == 'AnonymousUser'
+        )))
