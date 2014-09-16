@@ -101,9 +101,14 @@ def is_valid_in_template(var, attr):
             return False
         else:
             # Remove any routines that require arguments
-            argspec = getargspec(value)
-            num_args = len(argspec.args) if argspec.args else 0
-            num_defaults = len(argspec.defaults) if argspec.defaults else 0
-            if num_args - num_defaults > 1:
-                return False
+            try:
+                argspec = getargspec(value)
+                num_args = len(argspec.args) if argspec.args else 0
+                num_defaults = len(argspec.defaults) if argspec.defaults else 0
+                if num_args - num_defaults > 1:
+                    return False
+            except TypeError:
+                # C extension callables are routines, but getargspec fails with
+                # a TypeError when these are passed.
+                pass
     return True

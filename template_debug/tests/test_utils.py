@@ -204,6 +204,26 @@ class GetDetailsTestCase(TemplateDebugTestCase):
 
     def test_module_and_class_added(self):
         user_details = get_details(self.get_context()['user'])
+        self.assertEqual(user_details['META_module_name'],
+                         'django.utils.functional')
+        self.assertEqual(user_details['META_class_name'], 'User')
+
+    def test_get_details_c_extensions(self):
+        """
+        Ensures get_details works on objects with callables that are
+        implemented in C extensions. inspect.getargspec fails with a TypeError
+        for such callables, and get_details needs to handle this gracefully
+
+        N.B. Only Python >=2.7 has bit_length C routine on Booleans so the test
+        has to be skipped for Python2.6
+        """
+        if hasattr(True, 'bit_length'):
+            try:
+                details = get_details(True)
+            except TypeError:
+                self.fail('Fails to handle C routines for call to inspect.argspec')
+            self.assertEqual(details['bit_length'], 'routine')
+        user_details = get_details(self.get_context()['user'])
         self.assertTrue(any((
             user_details['META_module_name'], 'django.contrib.auth.models',
             user_details['META_module_name'], 'django.utils.functional'
