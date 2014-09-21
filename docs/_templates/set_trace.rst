@@ -15,12 +15,19 @@ Behavior:
 Inside the Debugger
 *******************
 
-Once inside the debugger, one can use details, attributes, and variables as functions as follows::
+Once inside the debugger, one can use details, attributes, variables, and render as functions as follows::
 
     details(variable_name)
     attributes(variable_name)
     variables(context)
+    render(string)
 
+The details, attributes, and variables functions work the same as their template tag counterparts.  For each
+of these, refer to their corresponding pages for more details.
+
+The render function is a quick way to test out how a given template string would be rendered using the
+current context. For instance, typing `render('{{ now }}')` in a set trace will display the rendered string,
+pulling the variable `now` from the current context.
 
 Usages and Examples
 *******************
@@ -41,5 +48,7 @@ A common use case is to put a {% set_trace %} near the top of the template you w
         Out: <SomeObject: identifier_2>
         In: item.attribute
         Out: "Portable Hole"
+        In: render('{% if item.magical %}A magical item {% endif %}')
+        Out: "A magical item"
 
 Using a similar technique, one might place {% set_trace %} inside of loops or conditional blocks to assure these blocks are or are not being executed given certain criteria. For example, if the given scenario causes the containing conditional to evaluate to true, the runserver will drop into a debugger, otherwise template rendering will continue as normal.
