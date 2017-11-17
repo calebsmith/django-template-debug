@@ -73,7 +73,7 @@ def get_attributes(var):
     of a template
     """
     is_valid = partial(is_valid_in_template, var)
-    return filter(is_valid, dir(var))
+    return list(filter(is_valid, dir(var)))
 
 
 def is_valid_in_template(var, attr):
